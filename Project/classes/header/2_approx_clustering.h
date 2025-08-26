@@ -7,11 +7,16 @@
 #include <iostream>
 #include "point.h"
 
+// Result structure for Gonzalez k-center algorithm
 struct KCenterResult {
-    std::vector<Point> centers;     // chosen centers
+    std::vector<Point> centers;     // chosen k centers
     std::vector<int> assign;        // assignment of each point to a center
     std::vector<double> min_dists;  // nearest distance of each point to a center
-    double L;                       // final radius
+    double L = 0.0;                 // final radius
+
+    // additions for V = centers ∪ {farthest point from centers}
+    Point farthest_point;           // the farthest point achieving L
+    int   farthest_index;      // its index in the original P
 };
 
 // input : 2 points
@@ -78,6 +83,7 @@ if (d < min_dists[i]) {
 }
 }
 
+// Gonzalez 2-approximation k-center clustering
 KCenterResult gonzalez_k_center(const std::vector<Point>& P, int k, int start_idx = 0) {
     KCenterResult R;
     const int n = (int)P.size();
@@ -87,8 +93,10 @@ KCenterResult gonzalez_k_center(const std::vector<Point>& P, int k, int start_id
     }
     k = std::min(k, n);
     if (start_idx < 0 || start_idx >= n) start_idx = 0;
-
+    
+    //optimization
     R.centers.reserve(k);
+    
     R.assign.assign(n, -1);
     R.min_dists.assign(n, std::numeric_limits<double>::infinity());
 
@@ -106,5 +114,19 @@ KCenterResult gonzalez_k_center(const std::vector<Point>& P, int k, int start_id
 
     // 3) compute final radius
     R.L = compute_radius(R.min_dists);
+
+    // 4) find the farthest point that achieves L
+    //    (ties: pick the first)
+    int far_idx = 0;
+    double best = -1.0;
+    for (int i = 0; i < n; ++i) {
+        if (R.min_dists[i] > best) {
+            best = R.min_dists[i];
+            far_idx = i;
+        }
+    }
+    R.farthest_index = far_idx;
+    R.farthest_point = P[far_idx];
+
     return R;
 }
