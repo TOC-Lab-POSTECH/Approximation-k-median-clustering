@@ -1,3 +1,6 @@
+// Created by Sanghwa Han
+#ifndef RANGE_COUNTING_ORACLE_H
+#define RANGE_COUNTING_ORACLE_H
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -68,3 +71,4 @@ private:
              + query(node->right, x1, x2, y1, y2);
     }
 };
+#endif
