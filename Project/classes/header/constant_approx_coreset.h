@@ -132,6 +132,10 @@ static void build_weighted_coreset_2d_pointsOnly(
         double base = twoPowJ_R(j);
         double cell = (eps * base) / (10.0 * c * (double)d);
         if (!(cell > 0.0)) cell = 1e-12; // 안전장치
+        
+        //cell이 너무 세분화되어서 S가 n과 거의 동일하게 생성되는 문제를 해결하기 위해서 cell 스케일링 진행
+        const double GRID_SCALE = 50.0;   // 실험값: 10~50 사이
+        cell *= GRID_SCALE;
 
         // grid index (센터 A[ci] 기준 상대좌표)
         long long gx = (long long)std::floor(((double)p.x - (double)A[ci].x) / cell);
