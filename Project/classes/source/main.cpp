@@ -19,20 +19,20 @@ int main() {
     cin.tie(nullptr);
 
     // -------------------------------
-    // 0. 파라미터 설정
+    // 0. Parameter settings
     // -------------------------------
-    const int N = 10000000;          // 원래 점 개수
-    const int k = 100;            // 클러스터 개수
-    const double eps_rep = 0.2;  // R_j 구성에 쓰는 ε (dense/sparse 기준)
-    const double eps_guess = 0.2;// OPT guess (1+ε)^j 의 ε (논문 스타일)
-    const int maxKMiter = 20;    // k-median++ Lloyd 반복 횟수
-    const int baselineRuns = 3;  // P 위에서 여러 번 돌려 최소 cost 선택
-    const int runsPerJ = 1;      // 각 R_j에 대해 k-median++을 몇 번 돌릴지
+    const int N = 10000000;      // number of original points
+    const int k = 100;           // number of clusters
+    const double eps_rep = 0.2;  // ε used to construct R_j (dense/sparse threshold)
+    const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
+    const int maxKMiter = 20;    // max Lloyd iterations for k-median++
+    const int baselineRuns = 3;  // #runs on P, take the best cost
+    const int runsPerJ = 1;      // #runs of k-median++ per R_j
 
-    mt19937 rng(123);            // 실험 전체 랜덤 시드
+    mt19937 rng(123);            // global RNG for this experiment
 
     // -------------------------------
-    // 1. 원래 point set P 생성: [0, 2N) × [0, 2N)
+    // 1. Generate original point set P in [0, 2N) × [0, 2N)
     // -------------------------------
     vector<Point> P;
     P.reserve(N);
@@ -41,13 +41,13 @@ int main() {
     for (int i = 0; i < N; ++i) {
         int x = coordDist(rng);
         int y = coordDist(rng);
-        P.emplace_back(x, y, 1.0); // 원래 점 weight = 1
+        P.emplace_back(x, y, 1.0); // weight = 1 for each point
     }
 
     cout << "Generated " << P.size() << " points in [0, " << 2 * N - 1 << "]^2.\n";
 
     // -------------------------------
-    // 2. RangeTree (Range Counting Oracle) 구축
+    // 2. Build RangeTree (Range Counting Oracle)
     // -------------------------------
     auto t0 = steady_clock::now();
     RangeTree tree(P);
@@ -59,7 +59,7 @@ int main() {
          << "], y in [" << tree.getMinY() << ", " << tree.getMaxY() << "]\n\n";
 
     // -------------------------------
-    // 3. Baseline: P 위에서 k-median++ 여러 번 실행
+    // 3. Baseline: run k-median++ directly on P
     // -------------------------------
     double bestCostP = numeric_limits<double>::infinity();
     vector<Point> bestCentersP;
@@ -89,13 +89,13 @@ int main() {
          << ", time = " << bestTimeP << " ms\n\n";
 
     // -------------------------------
-    // 4. OPT 범위 [1, 4N^2]에 대해 (1+eps_guess)^j 반복
-    //    각 j마다:
-    //      - R_j 구성 (시간 측정하되, 비교용 알고리즘 시간에서는 제외)
-    //      - R_j 위에서 k-median++ 실행 (시간을 모두 합산해서 알고리즘 시간으로 사용)
+    // 4. RCO pipeline: r_j = (1+eps_guess)^j, OPT in [1, 4N^2]
+    //    For each j:
+    //      - Build R_j (measure time, but exclude from algorithm-time comparison)
+    //      - Run k-median++ on R_j and sum these times
     // -------------------------------
     double OPT_min = 1.0;
-    double OPT_max = 4.0 * N * N;  // 논문에서 쓰는 upper bound
+    double OPT_max = 4.0 * N * N;  // upper bound for OPT
 
     int t_max = (int)ceil( log(OPT_max / OPT_min) / log(1.0 + eps_guess) );
 
@@ -104,13 +104,13 @@ int main() {
     cout << "eps_guess = " << eps_guess << " (for OPT guesses)\n";
     cout << "t_max     = " << t_max     << " guesses\n\n";
 
-    // RCO 파이프라인의 결과들
-    double totalKMTimeRj = 0.0;  // 모든 j에 대해 k-median++ 알고리즘에 쓴 시간 합
-    double totalBuildRjMs = 0.0; // R_j들을 구성하는 데 쓴 시간 합 (비교에서는 제외)
-    int    numSuccessfulJ = 0;   // R_j 구성에 성공한 j 개수
+    // Aggregated statistics for the RCO pipeline
+    double totalKMTimeRj = 0.0;  // total time spent in k-median++ on all R_j
+    double totalBuildRjMs = 0.0; // total time to construct all R_j (reference only)
+    int    numSuccessfulJ = 0;   // #j for which R_j was successfully constructed
 
     double bestCostR_onP  = numeric_limits<double>::infinity(); // min_j cost(P, C_j)
-    double bestCostR_onRj = numeric_limits<double>::infinity(); // 참조용: cost(R_j, C_j)
+    double bestCostR_onRj = numeric_limits<double>::infinity(); // min_j cost(R_j, C_j)
     vector<Point> bestCentersR;
     int bestJ = -1;
 
@@ -118,7 +118,7 @@ int main() {
         double rj = OPT_min * pow(1.0 + eps_guess, j);
         cout << "---- j = " << j << ", r_j = " << rj << " ----\n";
 
-        // 4-1. R_j 구성
+        // 4-1. Build R_j
         RjConfig cfg;
         cfg.n   = N;
         cfg.k   = k;
@@ -137,14 +137,15 @@ int main() {
         if (!ok) {
             cout << "  R_j build aborted (|K_j| too large). "
                  << "build time = " << buildRjMs << " ms\n";
-            continue; // 이 j는 OPT보다 너무 작은 guess라고 보고 넘어감
+            // Treat this j as a too-small guess and skip it
+            continue;
         }
 
         numSuccessfulJ++;
         cout << "  R_j build success. |R_j| = " << Rj.size()
              << ", build time = " << buildRjMs << " ms\n";
 
-        // 4-2. R_j 위에서 k-median++ 실행
+        // 4-2. Run k-median++ on R_j
         double bestCostThisJ_onP  = numeric_limits<double>::infinity();
         double bestCostThisJ_onRj = numeric_limits<double>::infinity();
         vector<Point> bestCentersThisJ;
@@ -160,14 +161,15 @@ int main() {
             double kmTimeMs = duration<double, milli>(tk1 - tk0).count();
             totalKMTimeThisJ += kmTimeMs;
 
-            double costR_onRj = k_median_cost(Rj, centersR); // coreset 기준 cost
-            double costR_onP  = k_median_cost(P,  centersR); // 원래 데이터 기준 cost
+            double costR_onRj = k_median_cost(Rj, centersR); // cost on representative set
+            double costR_onP  = k_median_cost(P,  centersR); // cost on original data
 
             cout << "    [R_j run " << run << "] "
                  << "time = " << kmTimeMs
                  << " ms, cost(R_j) = " << costR_onRj
                  << ", cost(P) = " << costR_onP << "\n";
 
+            // For this j, keep the run that is best on P
             if (costR_onP < bestCostThisJ_onP) {
                 bestCostThisJ_onP  = costR_onP;
                 bestCostThisJ_onRj = costR_onRj;
@@ -182,7 +184,7 @@ int main() {
 
         totalKMTimeRj += totalKMTimeThisJ;
 
-        // 4-3. 전체 j 중에서 최소 cost(P)를 주는 j* 갱신
+        // 4-3. Update global best j* based on cost(P)
         if (bestCostThisJ_onP < bestCostR_onP) {
             bestCostR_onP  = bestCostThisJ_onP;
             bestCostR_onRj = bestCostThisJ_onRj;
@@ -192,7 +194,7 @@ int main() {
     }
 
     // -------------------------------
-    // 5. 결과 요약 및 비교
+    // 5. Summary and comparison
     // -------------------------------
     cout << "==============================\n";
     cout << "Summary:\n";
@@ -218,7 +220,7 @@ int main() {
          << totalBuildRjMs << " ms (for reference only)\n\n";
 
     // -------------------------------
-    // 6. (1+ε)-approx 성능: ε_eff 계산
+    // 6. Empirical (1+ε)-approx quality: eps_eff
     // -------------------------------
     double eps_eff = bestCostR_onP / bestCostP - 1.0;
     if (eps_eff < 0) eps_eff = 0.0;
@@ -229,8 +231,8 @@ int main() {
     cout << "  Effective epsilon (eps_eff) = " << eps_eff
          << "  (i.e., cost_RCO <= (1 + eps_eff) * cost_P)\n";
 
-    // eps_guess 또는 eps_rep와 비교해서 "이론적 ε 수준"과 비슷한지 보는 용도
-    double eps_target = eps_guess; // 혹은 eps_rep
+    // Compare eps_eff with eps_guess or eps_rep to see if behavior matches the target ε
+    double eps_target = eps_guess; // or eps_rep
     cout << "  Target epsilon (from construction/guess) = " << eps_target << "\n";
     if (eps_eff <= eps_target) {
         cout << "  => Empirically within (1 + " << eps_target
@@ -241,7 +243,7 @@ int main() {
     }
 
     // -------------------------------
-    // 7. 시간 복잡도 관점 비교 코멘트
+    // 7. Time comparison (ignoring R_j construction)
     // -------------------------------
     cout << "\n==== Time comparison (ignoring R_j construction) ====\n";
     cout << "  Baseline: one k-median++ on P     ~ " << bestTimeP << " ms (per run)\n";
