@@ -27,9 +27,12 @@ set(SOURCES
     ${SOURCE_DIR}/RangeCountingOracle.cpp
     ${SOURCE_DIR}/Representative.cpp
     ${SOURCE_DIR}/k_median++.cpp
-    # 만약 point.cpp를 나중에 만들었다면 여기에 추가:
     # ${SOURCE_DIR}/point.cpp
 )
 
 # Executable target
-add_executable(exp_sublinear ${SOURCES})
+#cd ~/Desktop/Starlab/Approximation-k-median-clustering/Project
+#mkdir -p build
+#cd build
+#cmake -G "MinGW Makefiles"
+#cmake --build
