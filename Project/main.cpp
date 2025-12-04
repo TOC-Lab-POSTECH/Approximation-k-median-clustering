@@ -6,10 +6,10 @@
 #include <cmath>
 #include <chrono>  
 
-#include "../header/point.h"
-#include "../header/RangeCountingOracle.h"
-#include "../header/Representative.h"
-#include "../header/k_median++.h"
+#include "point.h"
+#include "RangeCountingOracle.h"
+#include "Representative.h"
+#include "k_median++.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -21,7 +21,7 @@ int main() {
     // -------------------------------
     // 0. Parameter settings
     // -------------------------------
-    const int N = 10000000;      // number of original points
+    const int N = 10000;      // number of original points
     const int k = 100;           // number of clusters
     const double eps_rep = 0.2;  // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
