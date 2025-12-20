@@ -42,7 +42,8 @@ int main() {
     // -------------------------------
     // 0. Parameter settings
     // -------------------------------
-    const int N = 100000;       // number of original points
+    // List of N values to benchmark
+     vector<int> N_list = {100000, 200000, 300000, 400000, 500000};
     const int k = 20;           // number of clusters
     const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
@@ -52,6 +53,11 @@ int main() {
 
     mt19937 rng(123);            // global RNG for this experiment
 
+for (int N : N_list) {
+    rng.seed(123 + N); // keep runs reproducible but different per N
+    cout << "\n\n==============================\n";
+    cout << "Benchmark for N = " << N << "\n";
+    cout << "==============================\n";
     // -------------------------------
     // 1. Generate original point set P in [0, 2N) × [0, 2N)
     // -------------------------------
@@ -277,5 +283,6 @@ int main() {
     cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, bestTimeP) << "\n";
     cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
 
+     }
     return 0;
 }
