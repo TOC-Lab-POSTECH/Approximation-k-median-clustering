@@ -42,9 +42,9 @@ int main() {
     // -------------------------------
     // 0. Parameter settings
     // -------------------------------
-    const int N = 100000;      // number of original points
+    const int N = 100000;       // number of original points
     const int k = 20;           // number of clusters
-    const double eps_rep = 0.2;  // ε used to construct R_j (dense/sparse threshold)
+    const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
     const int maxKMiter = 20;    // max Lloyd iterations for k-median++
     const int baselineRuns = 3;  // #runs on P, take the best cost
@@ -111,9 +111,7 @@ int main() {
 
     // -------------------------------
     // 4. RCO pipeline: r_j = (1+eps_guess)^j, OPT in [1, 4N^2]
-    //    For each j:
-    //      - Build R_j (measure time, but exclude from algorithm-time comparison)
-    //      - Run k-median++ on R_j and sum these times
+    //    Stop at FIRST successful j
     // -------------------------------
     double OPT_min = 1.0;
     double OPT_max = 4.0 * N * N;  // upper bound for OPT
@@ -125,15 +123,19 @@ int main() {
     cout << "eps_guess = " << eps_guess << " (for OPT guesses)\n";
     cout << "t_max     = " << t_max     << " guesses\n\n";
 
-    // Aggregated statistics for the RCO pipeline
-    double totalKMTimeRj = 0.0;  // total time spent in k-median++ on all R_j
-    double totalBuildRjMs = 0.0; // total time to construct all R_j (reference only)
-    int    numSuccessfulJ = 0;   // #j for which R_j was successfully constructed
+    int firstSuccessJ = -1;
+    int abortedRuns = 0;
 
-    double bestCostR_onP  = numeric_limits<double>::infinity(); // min_j cost(P, C_j)
-    double bestCostR_onRj = numeric_limits<double>::infinity(); // min_j cost(R_j, C_j)
-    vector<Point> bestCentersR;
-    int bestJ = -1;
+    double firstCostOnP = numeric_limits<double>::infinity();
+    double firstCostOnRj = numeric_limits<double>::infinity();
+
+    double firstBuildMs = 0.0;
+    double firstKmMs = 0.0;
+    double firstTotalPipelineMs = 0.0;
+
+    size_t firstRjSize = 0;
+
+    bool foundFirstSuccess = false;
 
     for (int j = 0; j <= t_max; ++j) {
         double rj = OPT_min * pow(1.0 + eps_guess, j);
@@ -153,24 +155,24 @@ int main() {
         auto tr1 = steady_clock::now();
 
         double buildRjMs = duration<double, milli>(tr1 - tr0).count();
-        totalBuildRjMs += buildRjMs;
 
         if (!ok) {
             cout << "  R_j build aborted (|K_j| too large). "
                  << "build time = " << buildRjMs << " ms\n";
-            // Treat this j as a too-small guess and skip it
+            abortedRuns++;
             continue;
         }
 
-        numSuccessfulJ++;
         cout << "  R_j build success. |R_j| = " << Rj.size()
              << ", build time = " << buildRjMs << " ms\n";
 
-        // 4-2. Run k-median++ on R_j
+        // 4-2. Run k-median++ on R_j (runsPerJ times, pick best on P)
         double bestCostThisJ_onP  = numeric_limits<double>::infinity();
         double bestCostThisJ_onRj = numeric_limits<double>::infinity();
         vector<Point> bestCentersThisJ;
-        double totalKMTimeThisJ = buildRjMs;
+
+        double kmTimeThisJ = 0.0;
+        double totalPipelineMsThisJ = buildRjMs;
 
         for (int run = 0; run < runsPerJ; ++run) {
             uint32_t seed = 2000 + j * 100 + run;
@@ -180,7 +182,8 @@ int main() {
             auto tk1 = steady_clock::now();
 
             double kmTimeMs = duration<double, milli>(tk1 - tk0).count();
-            totalKMTimeThisJ += kmTimeMs;
+            kmTimeThisJ += kmTimeMs;
+            totalPipelineMsThisJ += kmTimeMs;
 
             double costR_onRj = k_median_cost(Rj, centersR); // cost on representative set
             double costR_onP  = k_median_cost(P,  centersR); // cost on original data
@@ -190,7 +193,6 @@ int main() {
                  << " ms, cost(R_j) = " << costR_onRj
                  << ", cost(P) = " << costR_onP << "\n";
 
-            // For this j, keep the run that is best on P
             if (costR_onP < bestCostThisJ_onP) {
                 bestCostThisJ_onP  = costR_onP;
                 bestCostThisJ_onRj = costR_onRj;
@@ -200,19 +202,20 @@ int main() {
 
         cout << "  Best for this j: cost(P) = " << bestCostThisJ_onP
              << ", cost(R_j) = " << bestCostThisJ_onRj
-             << ", total k-median++ time for this j = "
-             << totalKMTimeThisJ << " ms\n\n";
+             << ", k-median++ time (this j) = " << kmTimeThisJ << " ms"
+             << ", total pipeline time (this j) = " << totalPipelineMsThisJ << " ms\n\n";
 
-        totalKMTimeRj += totalKMTimeThisJ;
+        // 4-3. First successful j: record and STOP
+        firstSuccessJ = j;
+        firstRjSize = Rj.size();
+        firstBuildMs = buildRjMs;
+        firstKmMs = kmTimeThisJ;
+        firstTotalPipelineMs = totalPipelineMsThisJ;
+        firstCostOnRj = bestCostThisJ_onRj;
+        firstCostOnP = bestCostThisJ_onP;
 
-        // 4-3. Update global best j* based on cost(P)
-        if (bestCostThisJ_onP < bestCostR_onP) {
-            bestCostR_onP  = bestCostThisJ_onP;
-            bestCostR_onRj = bestCostThisJ_onRj;
-            bestCentersR   = bestCentersThisJ;
-            bestJ          = j;
-        }
-        if(ok) break;
+        foundFirstSuccess = true;
+        break;
     }
 
     // -------------------------------
@@ -224,35 +227,33 @@ int main() {
          << " (k-median++ on P)\n";
     cout << "  Baseline (P) time per run   = " << bestTimeP << " ms (best run)\n\n";
 
-    if (bestJ == -1) {
+    if (!foundFirstSuccess) {
         cout << "No successful R_j was built. Cannot compare RCO pipeline.\n";
         return 0;
     }
 
-    cout << "  RCO pipeline:\n";
-    cout << "    #successful j             = " << numSuccessfulJ
-         << " out of " << (t_max + 1) << "\n";
-    cout << "    Best j*                   = " << bestJ << "\n";
-    cout << "    Best R_j-based cost(P)    = " << bestCostR_onP << "\n";
-    cout << "    Corresponding cost(R_j)   = " << bestCostR_onRj << "\n";
-    cout << "    Total k-median++ time\n"
-         << "      over all successful R_j = " << totalKMTimeRj << " ms\n";
-    cout << "    Total R_j construction time (all j) = "
-         << totalBuildRjMs << " ms (for reference only)\n\n";
+    cout << "  RCO pipeline (FIRST success):\n";
+    cout << "    First successful j            = " << firstSuccessJ << "\n";
+    cout << "    Aborted runs (|K_j| too large)= " << abortedRuns << "\n";
+    cout << "    |R_j|                         = " << firstRjSize << "\n";
+    cout << "    Cost(P) using centers from Rj = " << firstCostOnP << "\n";
+    cout << "    Cost(R_j)                     = " << firstCostOnRj << "\n";
+    cout << "    R_j build time                = " << firstBuildMs << " ms\n";
+    cout << "    k-median++ time on R_j        = " << firstKmMs << " ms\n";
+    cout << "    Total pipeline time           = " << firstTotalPipelineMs << " ms\n\n";
 
     // -------------------------------
-    // 6. Empirical (1+ε)-approx quality: eps_eff
+    // 6. Empirical approximation quality: eps_eff
     // -------------------------------
-    double eps_eff = bestCostR_onP / bestCostP - 1.0;
+    double eps_eff = firstCostOnP / bestCostP - 1.0;
     if (eps_eff < 0) eps_eff = 0.0;
 
     cout << "==== Approximation quality (empirical) ====\n";
-    cout << "  Baseline cost on P        = " << bestCostP << "\n";
-    cout << "  Best R_j-based cost on P  = " << bestCostR_onP << "\n";
-    cout << "  Effective epsilon (eps_eff) = " << eps_eff
+    cout << "  Baseline cost on P              = " << bestCostP << "\n";
+    cout << "  First-success R_j cost on P     = " << firstCostOnP << "\n";
+    cout << "  Effective epsilon (eps_eff)     = " << eps_eff
          << "  (i.e., cost_RCO <= (1 + eps_eff) * cost_P)\n";
 
-    // Compare eps_eff with eps_guess or eps_rep to see if behavior matches the target ε
     double eps_target = eps_guess; // or eps_rep
     cout << "  Target epsilon (from construction/guess) = " << eps_target << "\n";
     if (eps_eff <= eps_target) {
@@ -264,13 +265,17 @@ int main() {
     }
 
     // -------------------------------
-    // 7. Time comparison (ignoring R_j construction)
+    // 7. Time comparison (end-to-end) + edges/0.1s (complete graph)
     // -------------------------------
-    cout << "\n==== Time comparison (ignoring R_j construction) ====\n";
-    cout << "  Baseline: one k-median++ on P     ~ " << bestTimeP << " ms (per run)\n";
-    cout << "  RCO: sum over j of k-median++ on R_j ~ "
-         << totalKMTimeRj << " ms\n";
-    cout << "       (each R_j is smaller than P, but we run on many j's)\n";
+    cout << "\n==== Time comparison (end-to-end) ====\n";
+    cout << "  Baseline: one k-median++ on P      ~ " << bestTimeP << " ms (best run)\n";
+    cout << "  RCO: first-success pipeline time  ~ " << firstTotalPipelineMs << " ms\n";
+
+    cout << "\n==== edges / 0.1 sec (complete graph) ====\n";
+    long double m = complete_edges(N);
+    cout << "  Complete edges m = n(n-1)/2 = " << (double)m << "\n";
+    cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, bestTimeP) << "\n";
+    cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
 
     return 0;
 }
