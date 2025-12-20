@@ -26,6 +26,14 @@ static inline long double complete_edges(long long n) {
     return (long double)n * (long double)(n - 1) / 2.0L;
 }
 
+static inline long double edges_per_0p1sec(long long n, double timeMs) {
+    // Compute edges per 0.1 second for complete graph
+    // edges_per_0.1s = 0.1 * m / T, where m=n(n-1)/2, T is in seconds
+    long double m = complete_edges(n);
+    long double tSec = (long double)timeMs / 1000.0L;
+    if (tSec <= 0) return 0.0L;
+    return 0.1L * m / tSec;
+}
 
 int main() {
     ios::sync_with_stdio(false);
