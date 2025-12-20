@@ -14,6 +14,19 @@
 using namespace std;
 using namespace std::chrono;
 
+static inline double now_ms() {
+    using namespace std::chrono;
+    return duration<double, std::milli>(high_resolution_clock::now().time_since_epoch()).count();
+}
+
+static inline double ms_to_sec(double ms) { return ms / 1000.0; }
+
+static inline long double complete_edges(long long n) {
+    // m = n(n-1)/2
+    return (long double)n * (long double)(n - 1) / 2.0L;
+}
+
+
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
@@ -21,8 +34,8 @@ int main() {
     // -------------------------------
     // 0. Parameter settings
     // -------------------------------
-    const int N = 10000;      // number of original points
-    const int k = 100;           // number of clusters
+    const int N = 100000;      // number of original points
+    const int k = 20;           // number of clusters
     const double eps_rep = 0.2;  // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
     const int maxKMiter = 20;    // max Lloyd iterations for k-median++
@@ -149,7 +162,7 @@ int main() {
         double bestCostThisJ_onP  = numeric_limits<double>::infinity();
         double bestCostThisJ_onRj = numeric_limits<double>::infinity();
         vector<Point> bestCentersThisJ;
-        double totalKMTimeThisJ = 0.0;
+        double totalKMTimeThisJ = buildRjMs;
 
         for (int run = 0; run < runsPerJ; ++run) {
             uint32_t seed = 2000 + j * 100 + run;
@@ -191,6 +204,7 @@ int main() {
             bestCentersR   = bestCentersThisJ;
             bestJ          = j;
         }
+        if(ok) break;
     }
 
     // -------------------------------
@@ -215,7 +229,6 @@ int main() {
     cout << "    Corresponding cost(R_j)   = " << bestCostR_onRj << "\n";
     cout << "    Total k-median++ time\n"
          << "      over all successful R_j = " << totalKMTimeRj << " ms\n";
-    cout << "      (R_j construction time is excluded from this sum)\n";
     cout << "    Total R_j construction time (all j) = "
          << totalBuildRjMs << " ms (for reference only)\n\n";
 
