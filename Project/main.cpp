@@ -99,7 +99,7 @@ for (int N : N_list) {
 
     cout << "=== Baseline: k-median++ on P ===\n";
     for (int run = 0; run < baselineRuns; ++run) {
-        uint32_t seed = 1000 + run;
+        uint32_t seed = 1000u + (uint32_t)k * 10u + (uint32_t)run;
 
         auto tb0 = steady_clock::now();
         vector<Point> centersP = k_median_pp(P, k, maxKMiter, 50, 1e-3, seed);
@@ -186,7 +186,7 @@ for (int N : N_list) {
         double totalPipelineMsThisJ = buildRjMs;
 
         for (int run = 0; run < runsPerJ; ++run) {
-            uint32_t seed = 2000 + j * 100 + run;
+            uint32_t seed = 2000u + (uint32_t)k * 1000u + (uint32_t)j * 10u + (uint32_t)run;
 
             auto tk0 = steady_clock::now();
             vector<Point> centersR = k_median_pp(Rj, k, maxKMiter, 50, 1e-3, seed);
