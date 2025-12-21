@@ -246,7 +246,15 @@ for (int N : N_list) {
 
     if (!foundFirstSuccess) {
         cout << "No successful R_j was built. Cannot compare RCO pipeline.\n";
-        return 0;
+            csv << N << "," << k << ","
+        << bestCostP << "," << bestTimeP << ","
+        << -1 << "," << abortedRuns << "," << 0 << ","
+        << numeric_limits<double>::infinity() << "," << numeric_limits<double>::infinity() << ","
+        << 0.0 << "," << 0.0 << "," << 0.0 << ","
+        << 0.0
+        << "\n";
+
+    continue; // move to next k
     }
 
     cout << "  RCO pipeline (FIRST success):\n";
