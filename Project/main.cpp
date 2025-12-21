@@ -45,7 +45,7 @@ int main() {
     // List of N values to benchmark
      vector<int> N_list = {100000, 200000, 300000, 400000, 500000};
 //     const int k = 200;           // number of clusters
-    vector<int> K_list = {50, 100, 200, 400};
+    vector<int> K_list = {10, 20, 30, 40, 50};
     const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
     const int maxKMiter = 20;    // max Lloyd iterations for k-median++
@@ -86,6 +86,10 @@ for (int N : N_list) {
     cout << "Bounding box of P: x in [" << tree.getMinX() << ", " << tree.getMaxX()
          << "], y in [" << tree.getMinY() << ", " << tree.getMaxY() << "]\n\n";
 
+    for (int k : K_list) {
+    cout << "\n==============================\n";
+    cout << "Now running for k = " << k << "\n";
+    cout << "==============================\n"; 
     // -------------------------------
     // 3. Baseline: run k-median++ directly on P
     // -------------------------------
@@ -285,5 +289,6 @@ for (int N : N_list) {
     cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
 
      }
+}
     return 0;
 }
