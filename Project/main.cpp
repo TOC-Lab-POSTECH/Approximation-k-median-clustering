@@ -157,7 +157,7 @@ for (int k : K_list) {
     double OPT_min = 1.0;
     double OPT_max = 4.0 * N * N;  // upper bound for OPT
 
-    int t_max = (int)ceil( log(OPT_max / OPT_min) / log(1.0 + eps_guess) );
+    int t_max = (int)ceil( log(OPT_max / OPT_min) / log(1.0 + eps) );
 
     cout << "=== RCO pipeline: guesses r_j = (1+eps_guess)^j, j=0..t_max ===\n";
     cout << "eps   = " << eps  << " (for R_j construction)\n";
@@ -263,14 +263,16 @@ for (int k : K_list) {
     // -------------------------------
     cout << "==============================\n";
     cout << "Summary:\n";
-    cout << "  Baseline (P) best cost      = " << bestCostP
-         << " (k-median++ on P)\n";
-    cout << "  Baseline (P) time per run   = " << bestTimeP << " ms (best run)\n\n";
+     cout << "  Baseline (P) best cost      = " << baseline_cost
+          << " (k-median++ on P)\n";
+     cout << "  Baseline (P) time (best run)= " << baseline_best_run_time_ms << " ms\n";
+     cout << "  Baseline (P) total time     = " << baseline_total_time_ms << " ms\n\n";
+
 
     if (!foundFirstSuccess) {
         cout << "No successful R_j was built. Cannot compare RCO pipeline.\n";
             csv << N << "," << eps << "," << k << ","
-        << bestCostP << "," << bestTimeP << ","
+        << baseline_cost << "," << baseline_best_run_time_ms << ","
         << -1 << "," << abortedRuns << "," << 0 << ","
         << numeric_limits<double>::infinity() << "," << numeric_limits<double>::infinity() << ","
         << 0.0 << "," << 0.0 << "," << 0.0 << ","
@@ -293,11 +295,11 @@ for (int k : K_list) {
     // -------------------------------
     // 6. Empirical approximation quality: eps_eff
     // -------------------------------
-    double eps_eff = firstCostOnP / bestCostP - 1.0;
+    double eps_eff = firstCostOnP / baseline_cost  - 1.0;
     if (eps_eff < 0) eps_eff = 0.0;
 
     cout << "==== Approximation quality (empirical) ====\n";
-    cout << "  Baseline cost on P              = " << bestCostP << "\n";
+    cout << "  Baseline cost on P              = " << baseline_cost  << "\n";
     cout << "  First-success R_j cost on P     = " << firstCostOnP << "\n";
     cout << "  Effective epsilon (eps_eff)     = " << eps_eff
          << "  (i.e., cost_RCO <= (1 + eps_eff) * cost_P)\n";
@@ -316,17 +318,17 @@ for (int k : K_list) {
     // 7. Time comparison (end-to-end) + edges/0.1s (complete graph)
     // -------------------------------
     cout << "\n==== Time comparison (end-to-end) ====\n";
-    cout << "  Baseline: one k-median++ on P      ~ " << bestTimeP << " ms (best run)\n";
+    cout << "  Baseline: one k-median++ on P      ~ " << baseline_best_run_time_ms << " ms (best run)\n";
     cout << "  RCO: first-success pipeline time  ~ " << firstTotalPipelineMs << " ms\n";
 
     cout << "\n==== edges / 0.1 sec (complete graph) ====\n";
     long double m = complete_edges(N);
     cout << "  Complete edges m = n(n-1)/2 = " << (double)m << "\n";
-    cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, bestTimeP) << "\n";
+    cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, baseline_best_run_time_ms) << "\n";
     cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
 
     csv << N << "," << k << ","
-    << bestCostP << "," << bestTimeP << ","
+    << baseline_cost  << "," << baseline_best_run_time_ms << ","
     << firstSuccessJ << "," << abortedRuns << "," << firstRjSize << ","
     << firstCostOnP << "," << firstCostOnRj << ","
     << firstBuildMs << "," << firstKmMs << "," << firstTotalPipelineMs << ","
