@@ -93,10 +93,15 @@ for (int N : N_list) {
     cout << "Bounding box of P: x in [" << tree.getMinX() << ", " << tree.getMaxX()
          << "], y in [" << tree.getMinY() << ", " << tree.getMaxY() << "]\n\n";
 
-    for (int k : K_list) {
-    cout << "\n==============================\n";
-    cout << "Now running for k = " << k << "\n";
-    cout << "==============================\n"; 
+    for (int ei = 0; ei < (int)EPS_list.size(); ++ei) {
+    double eps = EPS_list[ei];
+    cout << "\n################################\n";
+    cout << "Now running for eps = " << eps << "\n";
+    cout << "################################\n";
+          for (int k : K_list) {
+          cout << "\n==============================\n";
+          cout << "Now running for k = " << k << "\n";
+          cout << "==============================\n"; 
     // -------------------------------
     // 3. Baseline: run k-median++ directly on P
     // -------------------------------
@@ -106,7 +111,8 @@ for (int N : N_list) {
 
     cout << "=== Baseline: k-median++ on P ===\n";
     for (int run = 0; run < baselineRuns; ++run) {
-        uint32_t seed = 1000u + (uint32_t)k * 10u + (uint32_t)run;
+        uint32_t seed = 1000u + (uint32_t)ei * 100000u + (uint32_t)k * 10u + (uint32_t)run;
+
 
         auto tb0 = steady_clock::now();
         vector<Point> centersP = k_median_pp(P, k, maxKMiter, 50, 1e-3, seed);
@@ -137,8 +143,7 @@ for (int N : N_list) {
     int t_max = (int)ceil( log(OPT_max / OPT_min) / log(1.0 + eps_guess) );
 
     cout << "=== RCO pipeline: guesses r_j = (1+eps_guess)^j, j=0..t_max ===\n";
-    cout << "eps_rep   = " << eps_rep   << " (for R_j construction)\n";
-    cout << "eps_guess = " << eps_guess << " (for OPT guesses)\n";
+    cout << "eps   = " << eps  << " (for R_j construction)\n";
     cout << "t_max     = " << t_max     << " guesses\n\n";
 
     int firstSuccessJ = -1;
@@ -156,14 +161,14 @@ for (int N : N_list) {
     bool foundFirstSuccess = false;
 
     for (int j = 0; j <= t_max; ++j) {
-        double rj = OPT_min * pow(1.0 + eps_guess, j);
+        double rj = OPT_min * pow(1.0 + eps, j);
         cout << "---- j = " << j << ", r_j = " << rj << " ----\n";
 
         // 4-1. Build R_j
         RjConfig cfg;
         cfg.n   = N;
         cfg.k   = k;
-        cfg.eps = eps_rep;
+        cfg.eps = eps;
         cfg.rj  = rj;
 
         RepresentativeSetBuilder repBuilder(tree, cfg);
@@ -193,7 +198,7 @@ for (int N : N_list) {
         double totalPipelineMsThisJ = buildRjMs;
 
         for (int run = 0; run < runsPerJ; ++run) {
-            uint32_t seed = 2000u + (uint32_t)k * 1000u + (uint32_t)j * 10u + (uint32_t)run;
+            uint32_t seed = 2000u + (uint32_t)ei * 100000u + (uint32_t)k * 1000u + (uint32_t)j * 10u + (uint32_t)run;
 
             auto tk0 = steady_clock::now();
             vector<Point> centersR = k_median_pp(Rj, k, maxKMiter, 50, 1e-3, seed);
@@ -280,9 +285,9 @@ for (int N : N_list) {
     cout << "  Effective epsilon (eps_eff)     = " << eps_eff
          << "  (i.e., cost_RCO <= (1 + eps_eff) * cost_P)\n";
 
-    double eps_target = eps_guess; // or eps_rep
-    cout << "  Target epsilon (from construction/guess) = " << eps_target << "\n";
-    if (eps_eff <= eps_target) {
+    double eps_target = eps; // or eps_rep
+    cout << "  Target epsilon (from construction/guess) = " << eps << "\n";
+    if (eps_eff <= eps) {
         cout << "  => Empirically within (1 + " << eps_target
              << ")-approx of baseline.\n";
     } else {
@@ -311,7 +316,7 @@ for (int N : N_list) {
     << eps_eff
     << "\n";
 
-
+          }
      }
 }
      csv.close();
