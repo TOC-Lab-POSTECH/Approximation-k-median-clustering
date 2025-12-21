@@ -44,7 +44,8 @@ int main() {
     // -------------------------------
     // List of N values to benchmark
      vector<int> N_list = {100000, 200000, 300000, 400000, 500000};
-    const int k = 20;           // number of clusters
+//     const int k = 200;           // number of clusters
+    vector<int> K_list = {50, 100, 200, 400};
     const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
     const int maxKMiter = 20;    // max Lloyd iterations for k-median++
