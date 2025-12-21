@@ -52,8 +52,9 @@ csv << fixed << setprecision(6);
      vector<int> N_list = {100000, 200000, 300000, 400000, 500000};
 //     const int k = 200;           // number of clusters
     vector<int> K_list = {10, 20, 30, 40, 50};
-    const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
-    const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
+    vector<double> EPS_list = {0.10, 0.20, 0.30};
+//     const double eps_rep = 0.2; // ε used to construct R_j (dense/sparse threshold)
+//     const double eps_guess = 0.2;// ε used for OPT guesses r_j = (1+ε)^j
     const int maxKMiter = 20;    // max Lloyd iterations for k-median++
     const int baselineRuns = 3;  // #runs on P, take the best cost
     const int runsPerJ = 1;      // #runs of k-median++ per R_j
@@ -313,5 +314,6 @@ for (int N : N_list) {
 
      }
 }
-    return 0;
+     csv.close();
+     return 0;
 }
