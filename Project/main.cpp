@@ -327,13 +327,14 @@ for (int k : K_list) {
     cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, baseline_best_run_time_ms) << "\n";
     cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
 
-    csv << N << "," << k << ","
-    << baseline_cost  << "," << baseline_best_run_time_ms << ","
+     csv << N << "," << eps << "," << k << ","
+    << baseline_cost << "," << baseline_total_time_ms << ","
     << firstSuccessJ << "," << abortedRuns << "," << firstRjSize << ","
     << firstCostOnP << "," << firstCostOnRj << ","
     << firstBuildMs << "," << firstKmMs << "," << firstTotalPipelineMs << ","
     << eps_eff
     << "\n";
+
 
           }
      }
