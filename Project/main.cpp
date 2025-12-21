@@ -95,46 +95,61 @@ for (int N : N_list) {
          << "], y in [" << tree.getMinY() << ", " << tree.getMaxY() << "]\n\n";
 
 
-     for (int k : K_list) {
-     cout << "\n==============================\n";
-     cout << "Now running for k = " << k << "\n";
-     cout << "==============================\n"; 
-    // -------------------------------
-    // 3. Baseline: run k-median++ directly on P
-    // -------------------------------
-    double bestCostP = numeric_limits<double>::infinity();
-    vector<Point> bestCentersP;
-    double bestTimeP = 0.0;
+for (int k : K_list) {
+    cout << "\n==============================\n";
+    cout << "Now running for k = " << k << "\n";
+    cout << "==============================\n";
 
+    // -------------------------------
+    // Baseline: run k-median++ directly on P (once per k)
+    // -------------------------------
     cout << "=== Baseline: k-median++ on P ===\n";
-    for (int run = 0; run < baselineRuns; ++run) {
-        uint32_t seed = 1000u + (uint32_t)ei * 100000u + (uint32_t)k * 10u + (uint32_t)run;
 
+    double baseline_cost = numeric_limits<double>::infinity();
+    vector<Point> baseline_centers;
+    double baseline_best_run_time_ms = 0.0;
+    double baseline_total_time_ms = 0.0;
+
+    auto base_t0 = steady_clock::now();
+
+    for (int run = 0; run < baselineRuns; ++run) {
+        // Baseline is independent of eps, so do NOT include ei here.
+        uint32_t seed = 1000u + (uint32_t)k * 1000u + (uint32_t)run;
 
         auto tb0 = steady_clock::now();
         vector<Point> centersP = k_median_pp(P, k, maxKMiter, 50, 1e-3, seed);
         auto tb1 = steady_clock::now();
 
-        double timeMs = duration<double, milli>(tb1 - tb0).count();
+        double runTimeMs = duration<double, milli>(tb1 - tb0).count();
         double costP = k_median_cost(P, centersP);
 
-        cout << "[P run " << run << "] time = " << timeMs
+        cout << "[P run " << run << "] time = " << runTimeMs
              << " ms, cost(P) = " << costP << "\n";
 
-        if (costP < bestCostP) {
-            bestCostP = costP;
-            bestCentersP = centersP;
-            bestTimeP = timeMs;
+        if (costP < baseline_cost) {
+            baseline_cost = costP;
+            baseline_centers = centersP;
+            baseline_best_run_time_ms = runTimeMs;
         }
     }
-    cout << "Best baseline on P: cost = " << bestCostP
-         << ", time = " << bestTimeP << " ms\n\n";
 
-     for (int ei = 0; ei < (int)EPS_list.size(); ++ei) {
-    double eps = EPS_list[ei];
-    cout << "\n################################\n";
-    cout << "Now running for eps = " << eps << "\n";
-    cout << "################################\n";
+    auto base_t1 = steady_clock::now();
+    baseline_total_time_ms = duration<double, milli>(base_t1 - base_t0).count();
+
+    cout << "Best baseline on P: cost = " << baseline_cost
+         << ", best-run time = " << baseline_best_run_time_ms
+         << " ms, total baseline time = " << baseline_total_time_ms
+         << " ms\n\n";
+
+    // -------------------------------
+    // EPS loop: reuse baseline_cost / baseline_total_time_ms
+    // -------------------------------
+    for (int ei = 0; ei < (int)EPS_list.size(); ++ei) {
+        double eps = EPS_list[ei];
+
+        cout << "\n################################\n";
+        cout << "Now running for eps = " << eps << "\n";
+        cout << "################################\n";
     // -------------------------------
     // 4. RCO pipeline: r_j = (1+eps_guess)^j, OPT in [1, 4N^2]
     //    Stop at FIRST successful j
