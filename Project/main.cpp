@@ -5,7 +5,8 @@
 #include <limits>
 #include <cmath>
 #include <chrono>  
-
+#include <fstream>
+#include <iomanip>
 #include "point.h"
 #include "RangeCountingOracle.h"
 #include "Representative.h"
@@ -38,6 +39,11 @@ static inline long double edges_per_0p1sec(long long n, double timeMs) {
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    ofstream csv("results.csv");
+csv << "N,k,baseline_cost,baseline_time_ms,first_success_j,aborted_runs,Rj_size,"
+       "rco_cost_on_P,rco_cost_on_Rj,rco_build_ms,rco_km_ms,rco_total_ms,eps_eff\n";
+csv << fixed << setprecision(6);
+
 
     // -------------------------------
     // 0. Parameter settings
@@ -287,6 +293,15 @@ for (int N : N_list) {
     cout << "  Complete edges m = n(n-1)/2 = " << (double)m << "\n";
     cout << "  Baseline edges/0.1s = " << (double)edges_per_0p1sec(N, bestTimeP) << "\n";
     cout << "  RCO edges/0.1s      = " << (double)edges_per_0p1sec(N, firstTotalPipelineMs) << "\n";
+
+    csv << N << "," << k << ","
+    << bestCostP << "," << bestTimeP << ","
+    << firstSuccessJ << "," << abortedRuns << "," << firstRjSize << ","
+    << firstCostOnP << "," << firstCostOnRj << ","
+    << firstBuildMs << "," << firstKmMs << "," << firstTotalPipelineMs << ","
+    << eps_eff
+    << "\n";
+
 
      }
 }
