@@ -40,8 +40,9 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     ofstream csv("results.csv");
-csv << "N,k,baseline_cost,baseline_time_ms,first_success_j,aborted_runs,Rj_size,"
+csv << "N,eps,k,baseline_cost,baseline_time_ms,first_success_j,aborted_runs,Rj_size,"
        "rco_cost_on_P,rco_cost_on_Rj,rco_build_ms,rco_km_ms,rco_total_ms,eps_eff\n";
+
 csv << fixed << setprecision(6);
 
 
@@ -93,15 +94,11 @@ for (int N : N_list) {
     cout << "Bounding box of P: x in [" << tree.getMinX() << ", " << tree.getMaxX()
          << "], y in [" << tree.getMinY() << ", " << tree.getMaxY() << "]\n\n";
 
-    for (int ei = 0; ei < (int)EPS_list.size(); ++ei) {
-    double eps = EPS_list[ei];
-    cout << "\n################################\n";
-    cout << "Now running for eps = " << eps << "\n";
-    cout << "################################\n";
-          for (int k : K_list) {
-          cout << "\n==============================\n";
-          cout << "Now running for k = " << k << "\n";
-          cout << "==============================\n"; 
+
+     for (int k : K_list) {
+     cout << "\n==============================\n";
+     cout << "Now running for k = " << k << "\n";
+     cout << "==============================\n"; 
     // -------------------------------
     // 3. Baseline: run k-median++ directly on P
     // -------------------------------
@@ -133,6 +130,11 @@ for (int N : N_list) {
     cout << "Best baseline on P: cost = " << bestCostP
          << ", time = " << bestTimeP << " ms\n\n";
 
+     for (int ei = 0; ei < (int)EPS_list.size(); ++ei) {
+    double eps = EPS_list[ei];
+    cout << "\n################################\n";
+    cout << "Now running for eps = " << eps << "\n";
+    cout << "################################\n";
     // -------------------------------
     // 4. RCO pipeline: r_j = (1+eps_guess)^j, OPT in [1, 4N^2]
     //    Stop at FIRST successful j
@@ -252,7 +254,7 @@ for (int N : N_list) {
 
     if (!foundFirstSuccess) {
         cout << "No successful R_j was built. Cannot compare RCO pipeline.\n";
-            csv << N << "," << k << ","
+            csv << N << "," << eps << "," << k << ","
         << bestCostP << "," << bestTimeP << ","
         << -1 << "," << abortedRuns << "," << 0 << ","
         << numeric_limits<double>::infinity() << "," << numeric_limits<double>::infinity() << ","
