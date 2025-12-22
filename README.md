@@ -20,3 +20,31 @@ The k-median clustering aims to select $k$ centers minimizing the sum of Euclide
 The key idea is to avoid running clustering on the full set $P$, and instead construct a small weighted representative set $R_j$ that summarizes the distribution of $P$. This representative set is built via a hierarchical grid/quadtree refinement guided by range-counting queries.
 After building $R_j$, we run a standard clustering routine on the much smaller weighted set. The resulting centers are then evaluated on the original dataset. Our implementation is based on the work of [[Monemizadeh 23]](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.APPROX/RANDOM.2023.6)
 
+# How to run(On Mac)
+We use [brew](https://brew.sh/) to install the requirements.
+1. install(terminal)
+    ```
+   brew install cmake
+   brew install cgal
+   ```
+   
+2. (If you did not clone this repository, then this step may be required.) Configure CMakeLists.txt(Refer to CMakeLists.txt at the root folder)
+
+4. create and move to build folder(on Project folder)
+   ```
+   mkdir build
+   cd build
+   ```
+5. run cmake
+   ```
+   cmake ..
+   ```
+6. run make to create the execution
+   ```
+   make
+   ```
+   
+7. run execution.(named Project1)
+   ```
+   ./Project1
+   ```
