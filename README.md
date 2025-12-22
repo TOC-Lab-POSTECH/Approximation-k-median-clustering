@@ -18,7 +18,7 @@ In this project, the RCO is used as the main primitive to support sublinear geom
 ## Approximation k-median clustering Algorithm
 The k-median clustering aims to select $k$ centers minimizing the sum of Euclidean distances from each point to its nearest center: $\mathrm{cost}(P, C) = \sum_{p \in P} \min_{c \in C} \lVert p - c \rVert.$ Our goal is to compute an approximate k-median solution in the Range Counting Oracle model, using only a sublinear number of range-counting queries.
 The key idea is to avoid running clustering on the full set $P$, and instead construct a small weighted representative set $R_j$ that summarizes the distribution of $P$. This representative set is built via a hierarchical grid/quadtree refinement guided by range-counting queries.
-After building $R_j$, we run a standard clustering routine on the much smaller weighted set. The resulting centers are then evaluated on the original dataset. Our implementation is based on the work of [[Monemizadeh 23]](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.APPROX/RANDOM.2023.6)
+After building $R_j$, we run a standard clustering routine on the much smaller weighted set. The resulting centers are then evaluated on the original dataset. Our implementation is based on the work of [[Monemizadeh 23]](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.APPROX/RANDOM.2023.6) 
 
 # How to run(On Mac)
 We use [brew](https://brew.sh/) to install the requirements.
