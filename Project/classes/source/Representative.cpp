@@ -41,7 +41,7 @@ RepresentativeSetBuilder::RepresentativeSetBuilder(const RangeTree& tree,
                  / (cfg.eps * cfg.eps * cfg.eps);
 
     // Limit on |K_j|: on the order of O(k ε^-3 log n)
-    Kj_limit = (int)(4.0 * cfg.k * logn
+    Kj_limit = (int)(0.001 * cfg.k * logn
               / (cfg.eps * cfg.eps * cfg.eps)) + 10;
 }
 
