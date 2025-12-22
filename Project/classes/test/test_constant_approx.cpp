@@ -1,3 +1,5 @@
+//For testing
+
 // File: ../source/test_constant_approx.cpp
 #include <iostream>
 #include <vector>
@@ -11,7 +13,7 @@
 #include <iomanip>  // for fixed / setprecision
 
 #include "../header/point.h"
-#include "../header/constant_approx.h"
+#include "constant_approx.h"
 
 // =======================================================
 // Data generation helpers
