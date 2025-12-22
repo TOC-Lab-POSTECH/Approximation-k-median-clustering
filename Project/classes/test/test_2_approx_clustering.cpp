@@ -1,3 +1,5 @@
+//For testing
+
 // test_gonzalez.cpp
 // Verify Gonzalez 2-approx k-center.
 // - small n: compare with optimal brute force
@@ -12,7 +14,7 @@
 #include <random>
 #include <chrono>
 
-#include "../header/2_approx_clustering.h"  // your header
+#include "2_approx_clustering.h"  // your header
 
 // --- distance utils (squared distance for fast comparisons) ---
 static inline double d2(const Point& a, const Point& b) {

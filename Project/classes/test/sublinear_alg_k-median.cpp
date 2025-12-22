@@ -1,3 +1,5 @@
+//For testing
+
 #include "point.h"
 #include "RangeCountingOracle.h"
 #include <iostream>
