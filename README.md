@@ -12,7 +12,7 @@ Note that CGAL has the dependency on the boost library since it uses the boost g
 
 # Data structure & Algorithm
 ## Range Counting Oracle Data structure
-The Range Counting Oracle (RCO) is a data structure for accessing a large 2D point set without scanning all points explicitly. Instead of reading individual points, the oracle answers queries of the form: "How many points lie inside an axis-aligned rectangle $[x_1, x_2] \times [y_1, y_2]$" This model is useful when direct access to the dataset is expensive or restricted, and we want algorithms whose complexity is measured by the number of oracle queries (rather than by runtime on the full input).
+The Range Counting Oracle (RCO) is a data structure, such as range trees, for accessing a large 2D point set without scanning all points explicitly. Instead of reading individual points, the oracle answers queries of the form: "How many points lie inside an axis-aligned rectangle $[x_1, x_2] \times [y_1, y_2]$" This model is useful when direct access to the dataset is expensive or restricted, and we want algorithms whose complexity is measured by the number of oracle queries (rather than by runtime on the full input).
 In this project, the RCO is used as the main primitive to support sublinear geometric algorithms by enabling hierarchical space decomposition basend only on rectangle counting queries.
 
 ## Approximation k-median clustering Algorithm
